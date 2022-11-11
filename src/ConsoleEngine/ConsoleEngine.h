@@ -29,7 +29,7 @@ private:
     void PrintValues(Values values);
     void PrintBool(bool exists);
     void PrintKeys(std::vector<std::string> keys);
-    void PrintOkOrError(bool ok);
+    void PrintOkOrFail(bool ok);
     void PrintIntOrNull(int value);
     void PrintShowAll(std::vector<Values> vector_of_values);
     void PrintUploadAndExportOutput(int value);

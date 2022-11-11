@@ -38,7 +38,7 @@ void ConsoleEngine::Start() {
         } else if (function == "UPDATE") {
             Values values;
             if (ValidateValues(operands, values)) {
-                PrintOkOrError(abstract_database->Update(values));
+                PrintOkOrFail(abstract_database->Update(values));
             }
         } else if (function == "KEYS") {
             if (ValidateEmptyOperands(operands)) {
@@ -47,7 +47,7 @@ void ConsoleEngine::Start() {
         } else if (function == "RENAME") {
             std::string old_key, new_key;
             if (ValidateRename(operands, old_key, new_key)) {
-                PrintOkOrError(abstract_database->Rename(old_key, new_key));
+                PrintOkOrFail(abstract_database->Rename(old_key, new_key));
             }
         } else if (function == "TTL") {
             std::string key;
@@ -57,7 +57,7 @@ void ConsoleEngine::Start() {
         } else if (function == "FIND") {
             Values values;
             if (ValidateFind(operands, values)) {
-                PrintOkOrError(abstract_database->Update(values));
+                PrintKeys(abstract_database->Find(values));
             }
         } else if (function == "SHOWALL") {
             if (ValidateEmptyOperands(operands)) {
@@ -84,14 +84,14 @@ void ConsoleEngine::Start() {
 bool ConsoleEngine::ValidateValues(std::string operands, Values& values) {
     std::istringstream iss(operands);
     char c;
-    std::string tmp = "";
+    std::string tmp;
     std::string year_of_birth, number_of_coins;
     if (!(iss >> values.key_) || !(iss >> values.last_name_) || !(iss >> values.first_name_) ||
         !(iss >> year_of_birth) || !(iss >> values.city_) || !(iss >> number_of_coins)) {
         std::cout << "Invalid operands" << std::endl;
-    } else if (!IsNumber(year_of_birth)) {
+    } else if (!IsNumber(year_of_birth) && year_of_birth != "-") {
         std::cout << "ERROR: unable to cast value \"" << year_of_birth << "\" to type int" << std::endl;
-    } else if (!IsNumber(number_of_coins)) {
+    } else if (!IsNumber(number_of_coins) && year_of_birth != "-") {
         std::cout << "ERROR: unable to cast value \"" << number_of_coins << "\" to type int" << std::endl;
     } else if (iss >> tmp) {
         if (tmp == "EX") {
@@ -111,8 +111,8 @@ bool ConsoleEngine::ValidateValues(std::string operands, Values& values) {
             std::cout << "Invalid operands" << std::endl;
         }
     } else {
-        values.year_of_birth_ = atoi(year_of_birth.c_str());
-        values.number_of_coins_ = atoi(number_of_coins.c_str());
+        values.year_of_birth_ = year_of_birth == "-" ? -1 : atoi(year_of_birth.c_str());
+        values.number_of_coins_ = number_of_coins == "-" ? -1 : atoi(number_of_coins.c_str());
         return true;
     }
     return false;
@@ -206,8 +206,8 @@ bool ConsoleEngine::IsNumber(const std::string& s) {
 }
 
 void ConsoleEngine::PrintValues(Values values) {
-    if (values.last_name_ == "" || values.first_name_ == "" || values.year_of_birth_ == -1 ||
-        values.city_ == "" || values.number_of_coins_ == -1) {
+    if (values.last_name_.empty() || values.first_name_.empty() || values.year_of_birth_ == -1 ||
+        values.city_.empty() || values.number_of_coins_ == -1) {
         std::cout << "(null)";
     } else {
         std::cout << values.last_name_ << " " << values.first_name_ << " " << values.year_of_birth_ << " "
@@ -217,9 +217,20 @@ void ConsoleEngine::PrintValues(Values values) {
 }
 
 void ConsoleEngine::PrintBool(bool exists) { std::cout << (exists ? "true" : "false") << std::endl; }
-void ConsoleEngine::PrintKeys(std::vector<std::string> keys) {}
-void ConsoleEngine::PrintOkOrError(bool ok) {}
-void ConsoleEngine::PrintIntOrNull(int value) {}
+
+void ConsoleEngine::PrintKeys(std::vector<std::string> keys) {
+    for (int i = 0; i < keys.size(); ++i) {
+        std::cout << i + 1 << ") " << keys[i] << std::endl;
+    }
+}
+
+void ConsoleEngine::PrintOkOrFail(bool ok) {
+    std::cout << (ok ? "OK" : "FAIL") << std::endl;
+}
+
+void ConsoleEngine::PrintIntOrNull(int value) {
+    std::cout << (value == -1 ? "(null)" : std::to_string(value)) << std::endl;
+}
 void ConsoleEngine::PrintShowAll(std::vector<Values> vector_of_values) {}
 void ConsoleEngine::PrintUploadAndExportOutput(int value) {}
 }  // namespace s21

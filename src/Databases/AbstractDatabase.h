@@ -33,7 +33,7 @@ public:
     virtual std::vector<std::string> Keys() = 0;
     virtual bool Rename(std::string key_old, std::string key) = 0;  // возвращает false, если ключа нет
     virtual int TTL(std::string key) = 0;
-    virtual void Find(Values values) = 0;
+    virtual std::vector<std::string> Find(Values values) = 0;
     virtual std::vector<Values> ShowAll() = 0;
     virtual int Upload(std::fstream& fs) = 0;  // возвращает кол-во считанных строк
     virtual int Export(std::fstream& fs) = 0;  // возвращает кол-во выгруженных строк

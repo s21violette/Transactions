@@ -6,17 +6,22 @@ HashTable::HashTable() {
     for (Values* values : values_vector) {
         values = nullptr;
     }
+    deleted.resize(buffer_size_);
+    for (bool value : deleted) {
+        value = false;
+    }
 }
 
 HashTable::~HashTable() {
     for (Values* values : values_vector) {
-        if (values) delete values;
+        delete values;
     }
 }
 
 void HashTable::Set(Values values) {
-    if (number_of_indexes_filled_in >= values_vector.size() * 0.75) {
-        values_vector.resize(number_of_indexes_filled_in + buffer_size_);
+    if (number_of_indices_filled_in_ >= values_vector.size() * 0.75) {
+        values_vector.resize(number_of_indices_filled_in_ + buffer_size_);
+        Rehash();
     }
     int key_int = StringToKeyInt(values.key_);
     i_ = 0;
@@ -25,11 +30,12 @@ void HashTable::Set(Values values) {
         int index = HashFunction(key_int);
         std::cout << "DEGUB: index == " << index << std::endl;
         if (!values_vector[index]) {
+            deleted[index] = false;
             values_vector[index] = new Values(values);
-            ++number_of_indexes_filled_in;
+            ++number_of_indices_filled_in_;
             std::cout << "DEBUG: values.ex_ == " << values.ex_ << std::endl;
             if (values.ex_ > 0) {
-                std::thread thread(DeleteByTimer, this, values.key_, values.ex_);
+                std::thread thread(DeleteByTimer, this, values.key_, std::ref(values.ex_));
                 thread.detach();
             }
             break;
@@ -42,23 +48,19 @@ void HashTable::Set(Values values) {
 Values HashTable::Get(std::string key) {
     int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
     i_ = 0;
-    Values empty_values;
     std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    Values empty_values;
     while (true) {
         int index = HashFunction(key_int);
         std::cout << "DEGUB: index == " << index << std::endl;
-        if (!values_vector[index]) {
+        if (++number_of_scanned_keys == values_vector.size()) {
             return empty_values;
-            break;
-        } else if (values_vector[index]->key_ == key) {
+        } else if (!values_vector[index] && !deleted[index]) {
+            return empty_values;
+        } else if (values_vector[index] && values_vector[index]->key_ == key) {
             return *values_vector[index];
-            break;
-        } else if (++number_of_scanned_keys == values_vector.size()) {
-            return empty_values;
-            break;
         }
     }
-    return empty_values;
 }
 
 bool HashTable::Exists(std::string key) {
@@ -69,18 +71,18 @@ bool HashTable::Exists(std::string key) {
     while (true) {
         int index = HashFunction(key_int);
         std::cout << "DEGUB: index == " << index << std::endl;
-        if (!values_vector[index]) {
+        if (++number_of_scanned_keys == values_vector.size()) {
+            return false;
+        } else if (!values_vector[index] && !deleted[index]) {
             return false;
         } else if (values_vector[index]->key_ == key) {
             return true;
-        } else if (++number_of_scanned_keys == values_vector.size()) {
-            return false;
         }
     }
-    return false;
 }
 
 bool HashTable::Del(std::string key) {
+    if (number_of_deleted_indices_ >= (double)values_vector.size() * 0.25) Rehash();
     int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
     i_ = 0;
     Values empty_values;
@@ -88,53 +90,115 @@ bool HashTable::Del(std::string key) {
     while (true) {
         int index = HashFunction(key_int);
         std::cout << "DEGUB: index == " << index << std::endl;
-        if (!values_vector[index]) {
+        if (++number_of_scanned_keys == values_vector.size()) {
             return false;
-        } else if (values_vector[index]->key_ == key) {
+        } else if (!values_vector[index] && !deleted[index]) {
+            return false;
+        } else if (values_vector[index] && values_vector[index]->key_ == key) {
             delete values_vector[index];
             values_vector[index] = nullptr;
+            deleted[index] = true;
+            ++number_of_deleted_indices_;
             return true;
-        } else if (++number_of_scanned_keys == values_vector.size()) {
-            return false;
         }
     }
-    return false;
 }
 
 bool HashTable::Update(Values values) {
-    return false;
+    int key_int = StringToKeyInt(values.key_), number_of_scanned_keys = 0;
+    i_ = 0;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    while (true) {
+        int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
+        if (++number_of_scanned_keys == values_vector.size()) {
+            return false;
+        } else if (!values_vector[index] && !deleted[index]) {
+            return false;
+        } else if (values_vector[index] && values_vector[index]->key_ == values.key_) {
+            if (values.last_name_ != "-") values_vector[index]->last_name_ = values.last_name_;
+            if (values.first_name_ != "-") values_vector[index]->first_name_ = values.first_name_;
+            if (values.year_of_birth_ != -1) values_vector[index]->year_of_birth_ = values.year_of_birth_;
+            if (values.city_ != "-") values_vector[index]->city_ = values.city_;
+            if (values.number_of_coins_ != -1)
+                values_vector[index]->number_of_coins_ = values.number_of_coins_;
+            return true;
+        }
+    }
 }
 
 std::vector<std::string> HashTable::Keys() {
-    return std::vector<std::string>();
+    std::vector<std::string> return_vector;
+    for (Values* values : values_vector) {
+        if (values) {
+            return_vector.push_back(values->key_);
+        }
+    }
+    return return_vector;
 }
 
-bool HashTable::Rename(std::string key_old, std::string key) {
-    return false;
+bool HashTable::Rename(std::string old_key, std::string new_key) {
+    int key_int = StringToKeyInt(old_key), number_of_scanned_keys = 0;
+    i_ = 0;
+    Values empty_values;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    while (true) {
+        int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
+        if (++number_of_scanned_keys == values_vector.size()) {
+            return false;
+        } else if (!values_vector[index] && !deleted[index]) {
+            return false;
+        } else if (values_vector[index] && values_vector[index]->key_ == old_key) {
+            values_vector[index]->key_ = new_key;
+            return true;
+        }
+    }
 }
 
+// НЕ РАБОТАЕТ
 int HashTable::TTL(std::string key) {
-    return -1;
+    int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
+    i_ = 0;
+    Values empty_values;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    while (true) {
+        int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
+        if (++number_of_scanned_keys == values_vector.size()) {
+            return -1;
+        } else if (!values_vector[index] && !deleted[index]) {
+            return -1;
+        } else if (values_vector[index] && values_vector[index]->key_ == key) {
+            return values_vector[index]->ex_;
+        }
+    }
 }
 
-void HashTable::Find(Values values) {
-
+std::vector<std::string> HashTable::Find(Values values) {
+    std::vector<std::string> return_vector;
+    for (Values* values_pointer : values_vector) {
+        if (values_pointer && (values.last_name_ == "-" || values.last_name_ == values_pointer->last_name_) &&
+            (values.first_name_ == "-" || values.first_name_ == values_pointer->first_name_) &&
+            (values.year_of_birth_ == -1 || values.year_of_birth_ == values_pointer->year_of_birth_) &&
+            (values.city_ == "-" || values.city_ == values_pointer->city_) &&
+            (values.number_of_coins_ == -1 || values.number_of_coins_ == values_pointer->number_of_coins_)) {
+            return_vector.push_back(values_pointer->key_);
+        }
+    }
+    return return_vector;
 }
 
 std::vector<Values> HashTable::ShowAll() {
-    return std::vector<Values>();
+    std::vector<Values> return_values;
+    return return_values;
 }
 
-int HashTable::Upload(std::fstream& fs) {
-    return -1;
-}
+int HashTable::Upload(std::fstream& fs) { return -1; }
 
-int HashTable::Export(std::fstream& fs) {
-    return -1;
-}
+int HashTable::Export(std::fstream& fs) { return -1; }
 
-
-int HashTable::StringToKeyInt(std::string str) {
+int HashTable::StringToKeyInt(const std::string& str) {
     int key_int = 0;
     for (char c : str) {
         key_int += c;
@@ -146,8 +210,40 @@ int HashTable::HashFunction(int key) {
     return (key + i_++ * (1 + key % (values_vector.size() - 1))) % values_vector.size();
 }
 
-void HashTable::DeleteByTimer(HashTable* object, std::string key, int seconds) {
-    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+void HashTable::DeleteByTimer(HashTable* object, std::string key, int& ex) {
+    std::mutex m;
+    while (ex > 0) {
+        m.lock();
+        --ex;
+        m.unlock();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
     object->Del(key);
+}
+
+void HashTable::Rehash() {
+    for (bool value : deleted) {
+        value = false;
+    }
+    number_of_deleted_indices_ = 0;
+    std::vector<Values> values_for_rehashing;
+    for (int i = 0; i < values_vector.size(); ++i) {
+        if (values_vector[i]) {
+            i_ = 0;
+            int key_int = StringToKeyInt(values_vector[i]->key_);
+            if (HashFunction(key_int) != i) {
+                values_for_rehashing.push_back(Values(*values_vector[i]));
+                delete values_vector[i];
+                values_vector[i] = nullptr;
+            }
+        }
+    }
+    for (Values values : values_for_rehashing) {
+        Set(values);
+    }
+    number_of_indices_filled_in_ = 0;
+    for (Values* values : values_vector) {
+        if (values) ++number_of_indices_filled_in_;
+    }
 }
 }  // namespace s21
