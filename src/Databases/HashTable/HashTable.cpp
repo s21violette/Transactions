@@ -19,21 +19,22 @@ HashTable::~HashTable() {
 }
 
 void HashTable::Set(Values values) {
-    if (number_of_indices_filled_in_ >= values_vector.size() * 0.75) {
-        values_vector.resize(number_of_indices_filled_in_ + buffer_size_);
+    if (number_of_indices_filled_in_ >= (double)values_vector.size() * 0.75) {
+        values_vector.resize(values_vector.size() + buffer_size_);
+        buffer_size_ *= 1.5;
         Rehash();
     }
     int key_int = StringToKeyInt(values.key_);
     i_ = 0;
-    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    int counter = 0;
     while (true) {
+        ++counter;
         int index = HashFunction(key_int);
-        std::cout << "DEGUB: index == " << index << std::endl;
         if (!values_vector[index]) {
+            std::cout << "DEGUB: index == " << index << std::endl;
             deleted[index] = false;
             values_vector[index] = new Values(values);
             ++number_of_indices_filled_in_;
-            std::cout << "DEBUG: values.ex_ == " << values.ex_ << std::endl;
             if (values.ex_ > 0) {
                 std::thread thread(DeleteByTimer, this, values.key_, std::ref(values_vector[index]->ex_));
                 thread.detach();
@@ -248,9 +249,7 @@ int HashTable::StringToKeyInt(const std::string& str) {
     return key_int;
 }
 
-int HashTable::HashFunction(int key) {
-    return (key + i_++ * (1 + key % (values_vector.size() - 1))) % values_vector.size();
-}
+int HashTable::HashFunction(int key) { return (key + i_++) % values_vector.size(); }
 
 void HashTable::DeleteByTimer(HashTable* object, std::string key, int& ex) {
     std::mutex m;
@@ -271,13 +270,9 @@ void HashTable::Rehash() {
     std::vector<Values> values_for_rehashing;
     for (int i = 0; i < values_vector.size(); ++i) {
         if (values_vector[i]) {
-            i_ = 0;
-            int key_int = StringToKeyInt(values_vector[i]->key_);
-            if (HashFunction(key_int) != i) {
-                values_for_rehashing.push_back(Values(*values_vector[i]));
-                delete values_vector[i];
-                values_vector[i] = nullptr;
-            }
+            values_for_rehashing.push_back(Values(*values_vector[i]));
+            delete values_vector[i];
+            values_vector[i] = nullptr;
         }
     }
     for (Values values : values_for_rehashing) {
