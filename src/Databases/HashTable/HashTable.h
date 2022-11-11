@@ -15,7 +15,7 @@ public:
     HashTable();
     ~HashTable();
     void Set(Values values);
-    Values& Get(std::string key);
+    Values Get(std::string key);
     bool Exists(std::string key);
     bool Del(std::string key);   // возвращает false, если ключа нет
     bool Update(Values values);  // возвращает false, если ключа нет

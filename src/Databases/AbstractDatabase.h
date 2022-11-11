@@ -6,14 +6,17 @@
 
 struct Values {
     Values() = default;
-    Values(Values& other_values)
-        : key_(other_values.key_),
-          last_name_(other_values.last_name_),
-          first_name_(other_values.first_name_),
-          year_of_birth_(other_values.year_of_birth_),
-          city_(other_values.city_),
-          number_of_coins_(other_values.number_of_coins_),
-          ex_(other_values.ex_) {}
+    Values(Values& other_values) { Copy(other_values); }
+    Values(Values&& other_values) { Copy(other_values); }
+    void Copy(Values& other_values) {
+        key_ = other_values.key_;
+        last_name_ = other_values.last_name_;
+        first_name_ = other_values.first_name_;
+        year_of_birth_ = other_values.year_of_birth_;
+        city_ = other_values.city_;
+        number_of_coins_ = other_values.number_of_coins_;
+        ex_ = other_values.ex_;
+    }
     std::string key_, last_name_, first_name_, city_;
     int year_of_birth_ = -1, number_of_coins_ = -1, ex_ = -1;
 };
@@ -23,7 +26,7 @@ class AbstractDatabase {
 public:
     virtual ~AbstractDatabase() = default;
     virtual void Set(Values values) = 0;
-    virtual Values& Get(std::string key) = 0;
+    virtual Values Get(std::string key) = 0;
     virtual bool Exists(std::string key) = 0;
     virtual bool Del(std::string key) = 0;   // возвращает false, если ключа нет
     virtual bool Update(Values values) = 0;  // возвращает false, если ключа нет
