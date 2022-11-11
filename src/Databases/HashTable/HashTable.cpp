@@ -27,6 +27,7 @@ void HashTable::Set(Values values) {
         if (!values_vector[index]) {
             values_vector[index] = new Values(values);
             ++number_of_indexes_filled_in;
+            std::cout << "DEBUG: values.ex_ == " << values.ex_ << std::endl;
             if (values.ex_ > 0) {
                 std::thread thread(DeleteByTimer, this, values.key_, values.ex_);
                 thread.detach();
@@ -147,7 +148,6 @@ int HashTable::HashFunction(int key) {
 
 void HashTable::DeleteByTimer(HashTable* object, std::string key, int seconds) {
     std::this_thread::sleep_for(std::chrono::seconds(seconds));
-    std::cout << "DEBUG: " << key << " DELETED!!!" << std::endl;
     object->Del(key);
 }
 }  // namespace s21

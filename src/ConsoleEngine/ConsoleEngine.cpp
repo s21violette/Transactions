@@ -103,6 +103,9 @@ bool ConsoleEngine::ValidateValues(std::string operands, Values& values) {
                 std::cout << "Too many operands" << std::endl;
             } else {
                 values.ex_ = atoi(tmp.c_str());
+                values.year_of_birth_ = atoi(year_of_birth.c_str());
+                values.number_of_coins_ = atoi(number_of_coins.c_str());
+                return true;
             }
         } else {
             std::cout << "Invalid operands" << std::endl;
