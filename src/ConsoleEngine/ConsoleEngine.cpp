@@ -15,8 +15,6 @@ void ConsoleEngine::Start() {
         std::string function, operands;
         std::cin >> function;
         getline(std::cin, operands);
-        //    std::cout << "function == " << function << std::endl;
-        //    std::cout << "operands == " << operands << std::endl;
         if (function == "SET") {
             Values values;
             if (ValidateValues(operands, values)) {
@@ -204,8 +202,18 @@ bool ConsoleEngine::IsNumber(const std::string& s) {
     return it == s.end();
 }
 
-void ConsoleEngine::PrintValues(Values values) {}
-void ConsoleEngine::PrintBool(bool exists) {}
+void ConsoleEngine::PrintValues(Values values) {
+    if (values.last_name_ == "" || values.first_name_ == "" || values.year_of_birth_ == -1 ||
+        values.city_ == "" || values.number_of_coins_ == -1) {
+        std::cout << "(null)";
+    } else {
+        std::cout << values.last_name_ << " " << values.first_name_ << " " << values.year_of_birth_ << " "
+                  << values.city_ << " " << values.number_of_coins_;
+    }
+    std::cout << std::endl;
+}
+
+void ConsoleEngine::PrintBool(bool exists) { std::cout << (exists ? "true" : "false") << std::endl; }
 void ConsoleEngine::PrintKeys(std::vector<std::string> keys) {}
 void ConsoleEngine::PrintOkOrError(bool ok) {}
 void ConsoleEngine::PrintIntOrNull(int value) {}

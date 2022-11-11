@@ -20,13 +20,17 @@ void HashTable::Set(Values values) {
     }
     int key_int = StringToKeyInt(values.key_);
     i_ = 0;
-    std::cout << "key_int == " << key_int << std::endl;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
     while (true) {
         int index = HashFunction(key_int);
-        std::cout << "index == " << index << std::endl;
+        std::cout << "DEGUB: index == " << index << std::endl;
         if (!values_vector[index]) {
             values_vector[index] = new Values(values);
             ++number_of_indexes_filled_in;
+            if (values.ex_ > 0) {
+                std::thread thread(DeleteByTimer, this, values.key_, values.ex_);
+                thread.detach();
+            }
             break;
         } else if (values_vector[index]->key_ == values.key_) {
             break;
@@ -38,9 +42,10 @@ Values HashTable::Get(std::string key) {
     int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
     i_ = 0;
     Values empty_values;
-    std::cout << "key_int == " << key_int << std::endl;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
     while (true) {
         int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
         if (!values_vector[index]) {
             return empty_values;
             break;
@@ -56,10 +61,42 @@ Values HashTable::Get(std::string key) {
 }
 
 bool HashTable::Exists(std::string key) {
+    int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
+    i_ = 0;
+    Values empty_values;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    while (true) {
+        int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
+        if (!values_vector[index]) {
+            return false;
+        } else if (values_vector[index]->key_ == key) {
+            return true;
+        } else if (++number_of_scanned_keys == values_vector.size()) {
+            return false;
+        }
+    }
     return false;
 }
 
 bool HashTable::Del(std::string key) {
+    int key_int = StringToKeyInt(key), number_of_scanned_keys = 0;
+    i_ = 0;
+    Values empty_values;
+    std::cout << "DEGUB: key_int == " << key_int << std::endl;
+    while (true) {
+        int index = HashFunction(key_int);
+        std::cout << "DEGUB: index == " << index << std::endl;
+        if (!values_vector[index]) {
+            return false;
+        } else if (values_vector[index]->key_ == key) {
+            delete values_vector[index];
+            values_vector[index] = nullptr;
+            return true;
+        } else if (++number_of_scanned_keys == values_vector.size()) {
+            return false;
+        }
+    }
     return false;
 }
 
@@ -106,5 +143,11 @@ int HashTable::StringToKeyInt(std::string str) {
 
 int HashTable::HashFunction(int key) {
     return (key + i_++ * (1 + key % (values_vector.size() - 1))) % values_vector.size();
+}
+
+void HashTable::DeleteByTimer(HashTable* object, std::string key, int seconds) {
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    std::cout << "DEBUG: " << key << " DELETED!!!" << std::endl;
+    object->Del(key);
 }
 }  // namespace s21
