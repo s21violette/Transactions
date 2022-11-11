@@ -35,7 +35,7 @@ void HashTable::Set(Values values) {
             ++number_of_indices_filled_in_;
             std::cout << "DEBUG: values.ex_ == " << values.ex_ << std::endl;
             if (values.ex_ > 0) {
-                std::thread thread(DeleteByTimer, this, values.key_, std::ref(values.ex_));
+                std::thread thread(DeleteByTimer, this, values.key_, std::ref(values_vector[index]->ex_));
                 thread.detach();
             }
             break;
@@ -191,12 +191,54 @@ std::vector<std::string> HashTable::Find(Values values) {
 
 std::vector<Values> HashTable::ShowAll() {
     std::vector<Values> return_values;
+    for (Values* values : values_vector) {
+        if (values) return_values.push_back(Values(*values));
+    }
     return return_values;
 }
 
-int HashTable::Upload(std::fstream& fs) { return -1; }
+int HashTable::Upload(std::fstream& fs) {
+    std::string str;
+    char c;
+    int counter = 0;
+    while (getline(fs, str)) {
+        Values values;
+        std::string year_of_birth, number_of_coins;
+        std::istringstream iss(str);
+        if (!(iss >> values.key_) || !(iss >> values.last_name_) || !(iss >> values.first_name_) ||
+            !(iss >> year_of_birth) || !(iss >> values.city_) || !(iss >> number_of_coins) || (iss >> c) ||
+            values.last_name_.front() != '\"' || values.last_name_.back() != '\"' ||
+            values.first_name_.front() != '\"' || values.first_name_.back() != '\"' ||
+            values.city_.front() != '\"' || values.city_.back() != '\"' ||
+            !ConsoleEngine::IsNumber(year_of_birth) || !ConsoleEngine::IsNumber(number_of_coins)) {
+            continue;
+        }
+        values.year_of_birth_ = atoi(year_of_birth.c_str());
+        values.number_of_coins_ = atoi(number_of_coins.c_str());
+        values.last_name_.erase(values.last_name_.begin());
+        values.last_name_.erase(values.last_name_.end() - 1);
+        values.first_name_.erase(values.first_name_.begin());
+        values.first_name_.erase(values.first_name_.end() - 1);
+        values.city_.erase(values.city_.begin());
+        values.city_.erase(values.city_.end() - 1);
+        Set(values);
+        ++counter;
+    }
+    return counter;
+}
 
-int HashTable::Export(std::fstream& fs) { return -1; }
+int HashTable::Export(std::fstream& fs) {
+    int counter = 0;
+    for (Values* values : values_vector) {
+        if (values) {
+            fs << values->key_ << " \"" << values->last_name_ << "\" \"" << values->first_name_ << "\" "
+               << values->year_of_birth_ << " \"" << values->city_ << "\" " << values->number_of_coins_
+               << std::endl;
+            ++counter;
+        }
+    }
+    return counter;
+}
 
 int HashTable::StringToKeyInt(const std::string& str) {
     int key_int = 0;

@@ -2,15 +2,17 @@
 #define TRANSACTIONS_CONSOLEFORHASHTABLE_H
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "../Databases/AbstractDatabase.h"
 #include "../Databases/HashTable/HashTable.h"
 
 namespace s21 {
 class ConsoleEngine {
+    friend class HashTable;
+
 public:
     ~ConsoleEngine();
     void Start();
@@ -34,7 +36,7 @@ private:
     void PrintShowAll(std::vector<Values> vector_of_values);
     void PrintUploadAndExportOutput(int value);
 
-    bool IsNumber(const std::string& s);
+    static bool IsNumber(const std::string& s);
 
     AbstractDatabase* abstract_database;
 };

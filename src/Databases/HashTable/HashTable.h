@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 
+#include "../../ConsoleEngine/ConsoleEngine.h"
 #include "../AbstractDatabase.h"
 
 namespace s21 {
