@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <list>
 
@@ -10,14 +11,24 @@ using std::pair;
 
 class Person {
 public:
-    Person(string name="-", string surname="-",
-           string city="-", int year=-1, int coins=-1,
-           int time=-1, bool temporary=false) {
+    Person(const Person &other) {
+        *this = other;
+    }
+
+    Person(string name, string surname,
+           string city, int year, int coins,
+           int time, bool temporary) {
         fill_data(name, surname, city, year, coins, time, temporary);
     }
 
-    Person(const Person &other) {
-        *this = other;
+    Person(const string &parameters) {
+        vector<string> p(6);
+        string str;
+        std::stringstream ss(parameters);
+        while (std::getline(ss, str, ' ')) {
+            p.push_back(str);
+        }
+        fill_data();
     }
 
     void operator=(const Person &other) {
@@ -49,13 +60,20 @@ private:
     int time_;
     bool temporary_;
 
-    void fill_data(string name, string surname, string city,
-                   int year, int coins, int time, bool temporary) {
-        this->name_ = name;
-        this->surname_ = surname;
-        this->city_ = city;
-        this->year_ = year;
-        this->coins_ = coins;
+    void fill_data(string name="-", string surname="-",
+                   string city="-", int year=-1,
+                   int coins=-1, int time=-1,
+                   bool temporary=false) {
+        if (name != "-")
+            this->name_ = name;
+        if (surname_ != "-")
+            this->surname_ = surname;
+        if (city != "-")
+            this->city_ = city;
+        if (year != -1)
+            this->year_ = year;
+        if (coins != -1)
+            this->coins_ = coins;
         this->time_ = time;
         this->temporary_ = temporary;
     }
@@ -137,12 +155,13 @@ private:
 };
 
 int main() {
-    HashTable map;
-    string key, val;
-    Person kek("Dmitry", "Utkin", "Moscow", 2001, 228, -1, false);
-    Person lol("Daniel", "Shakalov", "Minsk", 1996, 228, -1, false);
-    map.SET("hallo", lol);
-    map.SET("hello", kek);
+    Person("hello there general kenobi 123");
+//    HashTable map;
+//    string key, val;
+//    Person kek("Dmitry", "Utkin", "Moscow", 2001, 228, -1, false);
+//    Person lol("Daniel", "Shakalov", "Minsk", 1996, 228, -1, false);
+//    map.SET("hallo", lol);
+//    map.SET("hello", kek);
 //    while (true) {
 //        std::cin >> key;
 //        if (key == "q")
@@ -150,7 +169,6 @@ int main() {
 //        std::cin >> val;
 //        map.SET(key, val);
 //    }
-//    std::cout << map.DEL("hallo") << std::endl;
-    std::cout << map.GET("hello") << std::endl;
+//    std::cout << map.GET("hello") << std::endl;
 //    std::cout << map.GET("hallo");
 }
